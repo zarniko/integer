@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>INTEGER_v6.1</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&display=swap');
+
+    :root {
+      --bg: #0000ff;
+      --ui-bg: #0000cc;
+      --accent: #00ff00;
+      --highlight: #00ffff;
+      --text: #ffffff;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html, body { 
+      width: 100%; height: 100%; overflow: hidden; 
+      background: var(--bg); color: var(--text);
+      font-family: 'Roboto Mono', monospace;
+      user-select: none; -webkit-user-select: none;
+      transition: background 0.2s ease;
+    }
+
+    #app {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    #grid {
+      flex: 1;
+      display: flex;
+      padding: 0;
+      cursor: pointer;
+    }
+
+    .pane {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      height: 100%;
+    }
+
+    #number-display {
+      font-size: 380px; 
+      font-weight: 700;
+      color: var(--text);
+      line-height: 1;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #shape-container {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .shape-row {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+    }
+
+    .circle {
+      width: 80px;
+      height: 80px;
+      background: var(--accent);
+      border-radius: 50%;
+      transition: background 0.2s ease;
+    }
+
+    /* ── Controls ────────────────────────────────────────── */
+    #controls {
+      height: 160px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--ui-bg);
+      padding: 0;
+      transition: background 0.2s ease;
+    }
+
+    #number-line-container {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 60px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #theme-selector {
+      display: flex;
+      width: 100%;
+      height: 16px;
+      gap: 0;
+      cursor: pointer;
+    }
+
+    .theme-swatch {
+      flex: 1;
+      height: 100%;
+      display: flex;
+      filter: brightness(0.4);
+      transition: filter 0.2s ease;
+    }
+
+    .theme-swatch.active {
+      filter: brightness(1);
+    }
+
+    .swatch-stripe {
+      flex: 1;
+      height: 100%;
+    }
+
+    #number-line {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 80px;
+    }
+
+    .marker {
+      width: 80px;
+      height: 80px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      font-size: 28px;
+      font-weight: 700;
+      cursor: pointer;
+      color: rgba(255, 255, 255, 0.4);
+      border: none;
+      transition: color 0.1s, font-size 0.1s;
+    }
+
+    .marker:hover {
+      color: var(--highlight);
+    }
+
+    .marker.active {
+      color: var(--text);
+      font-size: 42px;
+    }
+
+    @media (max-width: 1024px) {
+      #number-display { font-size: 280px; }
+      .circle { width: 55px; height: 55px; }
+      .marker { font-size: 24px; width: 60px; }
+      .marker.active { font-size: 34px; }
+    }
+
+    @media (max-width: 768px) {
+      #number-display { font-size: 200px; }
+      .circle { width: 40px; height: 40px; }
+      #grid { flex-direction: column; }
+      #number-line-container { padding: 20px 20px 0 20px; } /* Added 20px top padding */
+      .marker { font-size: 18px; width: 35px; }
+      .marker.active { font-size: 26px; }
+      #controls { height: 140px; } /* Slightly increased height to accommodate padding */
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div id="grid">
+      <div id="left-pane" class="pane">
+        <div id="number-display">0</div>
+      </div>
+      <div id="right-pane" class="pane">
+        <div id="shape-container"></div>
+      </div>
+    </div>
+
+    <div id="controls">
+      <div id="number-line-container">
+        <div id="theme-selector"></div>
+        <div id="number-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const numberDisplay = document.getElementById('number-display');
+    const shapeContainer = document.getElementById('shape-container');
+    const numberLine = document.getElementById('number-line');
+    const themeSelector = document.getElementById('theme-selector');
+
+    let currentNumber = 0;
+
+    const THEMES = [
+      { bg: '#2e00ff', ui: '#1a00b3', accent: '#00ff41', highlight: '#00ffff' }, // Blue / Green / Cyan
+      { bg: '#ff00ff', ui: '#b300b3', accent: '#ffff00', highlight: '#ffffff' }, // Magenta / Yellow / White
+      { bg: '#ff4d00', ui: '#cc3d00', accent: '#7000ff', highlight: '#ff00ff' }  // Orange / Purple / Pink
+    ];
+
+    function setTheme(idx) {
+      const theme = THEMES[idx];
+      document.documentElement.style.setProperty('--bg', theme.bg);
+      document.documentElement.style.setProperty('--ui-bg', theme.ui);
+      document.documentElement.style.setProperty('--accent', theme.accent);
+      document.documentElement.style.setProperty('--highlight', theme.highlight);
+      
+      document.querySelectorAll('.theme-swatch').forEach((s, i) => {
+        s.classList.toggle('active', i === idx);
+      });
+    }
+
+    function initThemes() {
+      THEMES.forEach((theme, i) => {
+        const swatch = document.createElement('div');
+        swatch.className = 'theme-swatch';
+        
+        [theme.bg, theme.accent, theme.highlight].forEach(col => {
+            const stripe = document.createElement('div');
+            stripe.className = 'swatch-stripe';
+            stripe.style.background = col;
+            swatch.appendChild(stripe);
+        });
+        
+        swatch.addEventListener('click', () => setTheme(i));
+        themeSelector.appendChild(swatch);
+      });
+      setTheme(0);
+    }
+
+    // ── Interaction ──────────────────────────────────────
+    document.getElementById('left-pane').addEventListener('click', () => {
+      currentNumber = (currentNumber + 1) % 11;
+      updateDisplay();
+    });
+
+    document.getElementById('right-pane').addEventListener('click', () => {
+      currentNumber = (currentNumber - 1 + 11) % 11;
+      updateDisplay();
+    });
+
+    // ── Logic ────────────────────────────────────────────
+    function createNumberLine() {
+      for (let i = 0; i <= 10; i++) {
+        const marker = document.createElement('div');
+        marker.className = 'marker';
+        marker.textContent = i;
+        marker.dataset.value = i;
+        if (i === 0) marker.classList.add('active');
+        marker.addEventListener('click', (e) => {
+          e.stopPropagation();
+          currentNumber = i;
+          updateDisplay();
+        });
+        numberLine.appendChild(marker);
+      }
+    }
+
+    function updateDisplay() {
+      numberDisplay.textContent = currentNumber;
+      
+      document.querySelectorAll('.marker').forEach(m => {
+        m.classList.toggle('active', parseInt(m.dataset.value) === currentNumber);
+      });
+
+      shapeContainer.innerHTML = '';
+      let count = 0;
+      for (let row = 1; count < currentNumber; row++) {
+        const rowEl = document.createElement('div');
+        rowEl.className = 'shape-row';
+        shapeContainer.appendChild(rowEl);
+        
+        for (let i = 0; i < row && count < currentNumber; i++) {
+          const sq = document.createElement('div');
+          sq.className = 'circle';
+          rowEl.appendChild(sq);
+          count++;
+        }
+      }
+    }
+
+    initThemes();
+    createNumberLine();
+    updateDisplay();
+  </script>
+</body>
+</html>
