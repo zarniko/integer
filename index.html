@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>Integer</title>
+  <title>INTEGER_v6.1</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&display=swap');
 
@@ -240,12 +240,12 @@
 
     // ── Interaction ──────────────────────────────────────
     document.getElementById('left-pane').addEventListener('click', () => {
-      currentNumber = (currentNumber + 1) % 11;
+      currentNumber = (currentNumber - 1 + 11) % 11;
       updateDisplay();
     });
 
     document.getElementById('right-pane').addEventListener('click', () => {
-      currentNumber = (currentNumber - 1 + 11) % 11;
+      currentNumber = (currentNumber + 1) % 11;
       updateDisplay();
     });
 
