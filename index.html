@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-  <title>INTEGER_v6.1</title>
+  <title>integer</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@700&display=swap');
 
@@ -157,6 +157,14 @@
       font-size: 42px;
     }
 
+    /* ── Negative State ─────────────────────────────────── */
+    .negative #number-display {
+      color: var(--accent);
+    }
+    .negative .circle {
+      background: var(--text);
+    }
+
     @media (max-width: 1024px) {
       #number-display { font-size: 280px; }
       .circle { width: 55px; height: 55px; }
@@ -199,8 +207,10 @@
     const shapeContainer = document.getElementById('shape-container');
     const numberLine = document.getElementById('number-line');
     const themeSelector = document.getElementById('theme-selector');
+    const app = document.getElementById('app');
 
     let currentNumber = 0;
+    let windowStart = 0;
 
     const THEMES = [
       { bg: '#2e00ff', ui: '#1a00b3', accent: '#00ff41', highlight: '#00ffff' }, // Blue / Green / Cyan
@@ -240,23 +250,38 @@
 
     // ── Interaction ──────────────────────────────────────
     document.getElementById('left-pane').addEventListener('click', () => {
-      currentNumber = (currentNumber - 1 + 11) % 11;
-      updateDisplay();
+      if (currentNumber > -10) {
+        currentNumber--;
+        updateDisplay();
+      }
     });
 
     document.getElementById('right-pane').addEventListener('click', () => {
-      currentNumber = (currentNumber + 1) % 11;
-      updateDisplay();
+      if (currentNumber < 10) {
+        currentNumber++;
+        updateDisplay();
+      }
     });
 
     // ── Logic ────────────────────────────────────────────
-    function createNumberLine() {
-      for (let i = 0; i <= 10; i++) {
+    function updateNumberLine() {
+      // Shift window if currentNumber goes out of bounds
+      if (currentNumber < windowStart) {
+        windowStart = currentNumber;
+      } else if (currentNumber > windowStart + 10) {
+        windowStart = currentNumber - 10;
+      }
+      
+      // Clamp window range to stay within [-10, 10] while showing 11 markers
+      windowStart = Math.max(-10, Math.min(0, windowStart));
+
+      numberLine.innerHTML = '';
+      for (let i = windowStart; i <= windowStart + 10; i++) {
         const marker = document.createElement('div');
         marker.className = 'marker';
         marker.textContent = i;
         marker.dataset.value = i;
-        if (i === 0) marker.classList.add('active');
+        marker.classList.toggle('active', i === currentNumber);
         marker.addEventListener('click', (e) => {
           e.stopPropagation();
           currentNumber = i;
@@ -268,19 +293,20 @@
 
     function updateDisplay() {
       numberDisplay.textContent = currentNumber;
+      app.classList.toggle('negative', currentNumber < 0);
       
-      document.querySelectorAll('.marker').forEach(m => {
-        m.classList.toggle('active', parseInt(m.dataset.value) === currentNumber);
-      });
+      updateNumberLine();
 
       shapeContainer.innerHTML = '';
       let count = 0;
-      for (let row = 1; count < currentNumber; row++) {
+      const absVal = Math.abs(currentNumber);
+      
+      for (let row = 1; count < absVal; row++) {
         const rowEl = document.createElement('div');
         rowEl.className = 'shape-row';
         shapeContainer.appendChild(rowEl);
         
-        for (let i = 0; i < row && count < currentNumber; i++) {
+        for (let i = 0; i < row && count < absVal; i++) {
           const sq = document.createElement('div');
           sq.className = 'circle';
           rowEl.appendChild(sq);
@@ -290,7 +316,6 @@
     }
 
     initThemes();
-    createNumberLine();
     updateDisplay();
   </script>
 </body>
