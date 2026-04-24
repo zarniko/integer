@@ -93,18 +93,15 @@
       height: 160px;
       display: flex;
       flex-direction: column;
-      align-items: center;
+      align-items: stretch;
       justify-content: center;
-      background: var(--ui-bg);
+      background: var(--bg);
       padding: 0;
       transition: background 0.2s ease;
     }
 
     #number-line-container {
       width: 100%;
-      max-width: 1200px;
-      margin: 0 auto;
-      padding: 0 60px;
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -112,34 +109,28 @@
 
     #theme-selector {
       display: flex;
-      width: 100%;
+      justify-content: center;
+      align-items: center;
       height: 16px;
-      gap: 0;
       cursor: pointer;
     }
 
-    .theme-swatch {
-      flex: 1;
-      height: 100%;
-      display: flex;
-      filter: brightness(0.4);
-      transition: filter 0.2s ease;
+    #theme-dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      transition: background 0.2s ease;
     }
 
-    .theme-swatch.active {
-      filter: brightness(1);
-    }
-
-    .swatch-stripe {
-      flex: 1;
-      height: 100%;
-    }
-
-    #number-line {
+#number-line {
       display: flex;
       justify-content: space-between;
       align-items: center;
       height: 80px;
+      padding: 0 60px;
+      max-width: 1200px;
+      width: 100%;
+      margin: 0 auto;
     }
 
     .marker {
@@ -185,7 +176,7 @@
       #number-display { font-size: 200px; }
       .circle { width: 40px; height: 40px; }
       #grid { flex-direction: column; }
-      #number-line-container { padding: 20px 20px 0 20px; } /* Added 20px top padding */
+      #number-line { padding: 0 20px; }
       .marker { font-size: 18px; width: 35px; }
       .marker.active { font-size: 26px; }
       #controls { height: 140px; } /* Slightly increased height to accommodate padding */
@@ -220,6 +211,7 @@
 
     let currentNumber = 0;
     let windowStart = 0;
+    let currentThemeIdx = 0;
 
     const THEMES = [
       { bg: '#2e00ff', ui: '#1a00b3', accent: '#00ff41', highlight: '#00ffff' }, // Blue / Green / Cyan
@@ -228,32 +220,21 @@
     ];
 
     function setTheme(idx) {
+      currentThemeIdx = idx;
       const theme = THEMES[idx];
       document.documentElement.style.setProperty('--bg', theme.bg);
       document.documentElement.style.setProperty('--ui-bg', theme.ui);
       document.documentElement.style.setProperty('--accent', theme.accent);
       document.documentElement.style.setProperty('--highlight', theme.highlight);
-      
-      document.querySelectorAll('.theme-swatch').forEach((s, i) => {
-        s.classList.toggle('active', i === idx);
-      });
+      const nextTheme = THEMES[(idx + 1) % THEMES.length];
+      document.getElementById('theme-dot').style.background = nextTheme.accent;
     }
 
     function initThemes() {
-      THEMES.forEach((theme, i) => {
-        const swatch = document.createElement('div');
-        swatch.className = 'theme-swatch';
-        
-        [theme.bg, theme.accent, theme.highlight].forEach(col => {
-            const stripe = document.createElement('div');
-            stripe.className = 'swatch-stripe';
-            stripe.style.background = col;
-            swatch.appendChild(stripe);
-        });
-        
-        swatch.addEventListener('click', () => setTheme(i));
-        themeSelector.appendChild(swatch);
-      });
+      const dot = document.createElement('div');
+      dot.id = 'theme-dot';
+      dot.addEventListener('click', () => setTheme((currentThemeIdx + 1) % THEMES.length));
+      themeSelector.appendChild(dot);
       setTheme(0);
     }
 
