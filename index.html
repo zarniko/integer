@@ -238,11 +238,86 @@
       setTheme(0);
     }
 
+    // ── Audio ────────────────────────────────────────────
+    let audioCtx = null;
+    let reverbNode = null;
+
+    // C major pentatonic ascending: positive = bright high (1→10), negative = dark low (−1→−10)
+    const POS_FREQS = [261.6, 293.7, 329.6, 392.0, 440.0, 523.3, 587.3, 659.3, 784.0, 880.0];
+    const NEG_FREQS = [130.8, 146.8, 164.8, 196.0, 220.0, 261.6, 293.7, 329.6, 392.0, 440.0];
+
+    function initAudio() {
+      if (audioCtx) return;
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+      reverbNode = audioCtx.createConvolver();
+      const sr = audioCtx.sampleRate;
+      const len = Math.floor(sr * 2.0);
+      const impulse = audioCtx.createBuffer(2, len, sr);
+      for (let c = 0; c < 2; c++) {
+        const ch = impulse.getChannelData(c);
+        for (let i = 0; i < len; i++) {
+          ch[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.0);
+        }
+      }
+      reverbNode.buffer = impulse;
+      const wetGain = audioCtx.createGain();
+      wetGain.gain.value = 0.22;
+      reverbNode.connect(wetGain);
+      wetGain.connect(audioCtx.destination);
+    }
+
+    function playPartial(freq, gain, decay, sweepTo) {
+      const now = audioCtx.currentTime;
+      const osc = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now);
+      if (sweepTo !== undefined) {
+        osc.frequency.exponentialRampToValueAtTime(sweepTo, now + 0.1);
+      }
+      g.gain.setValueAtTime(0, now);
+      g.gain.linearRampToValueAtTime(gain, now + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, now + decay);
+      osc.connect(g);
+      g.connect(audioCtx.destination);
+      g.connect(reverbNode);
+      osc.start(now);
+      osc.stop(now + decay + 0.1);
+    }
+
+    function playNumberSound(n) {
+      initAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      if (n === 0) {
+        // Neutral pure bell, D4
+        playPartial(293.7, 0.35, 1.6);
+        playPartial(587.3, 0.08, 0.9);
+        return;
+      }
+
+      if (n > 0) {
+        const freq = POS_FREQS[n - 1];
+        // Bright rising: fundamental sweeps up from 7% flat → pitch
+        playPartial(freq * 0.93, 0.45, 1.4, freq);
+        playPartial(freq * 2, 0.15, 0.85);
+        playPartial(freq * 4, 0.04, 0.45);
+      } else {
+        const freq = NEG_FREQS[Math.abs(n) - 1];
+        // Dark falling: sub-octave weight + fundamental sweeps down 7%
+        playPartial(freq * 0.5, 0.18, 2.2);
+        playPartial(freq, 0.4, 2.0, freq * 0.93);
+        playPartial(freq * 3, 0.06, 0.7);
+      }
+    }
+
     // ── Interaction ──────────────────────────────────────
     document.getElementById('left-pane').addEventListener('click', () => {
       if (currentNumber > -10) {
         currentNumber--;
         updateDisplay();
+        playNumberSound(currentNumber);
       }
     });
 
@@ -250,6 +325,7 @@
       if (currentNumber < 10) {
         currentNumber++;
         updateDisplay();
+        playNumberSound(currentNumber);
       }
     });
 
@@ -276,6 +352,7 @@
           e.stopPropagation();
           currentNumber = i;
           updateDisplay();
+          playNumberSound(currentNumber);
         });
         numberLine.appendChild(marker);
       }
